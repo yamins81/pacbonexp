@@ -1,0 +1,32 @@
+<html>
+
+ <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.0/themes/base/jquery-ui.css">
+ <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+ <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.5.1/chart.min.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/danfojs@0.3.3/lib/bundle.min.js"></script>
+ <script>
+   $(document).ready(function(){
+
+   $.ajax({url:"ranking_data",
+   type: "GET",
+   contentType:"application/json",
+   success: function(resp){
+      $("#rankings").html(resp["rankings"]);
+      $("#winners").html(resp["winners"]);
+      }
+   });
+
+  })
+</script>
+
+ <div id="overall">
+   <strong>Rankings:</strong>
+   <br/>
+   <div id="rankings"></div>
+   <br/>
+   <strong>Winners:</strong>
+   <div id="winners"></div>
+</div>
+
+</html>
