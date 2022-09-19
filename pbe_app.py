@@ -10,8 +10,8 @@ from flask import request, Response
 app = Flask(__name__)
 
 
-userhash = '7439eb87381c11fb358690d90d4fa7c6ca6668b300af5e1149aad49d17ae9c08'
-passwdhash = '6c1924b3c0d963b68faeaa091c02f9da9b3014271ec110d65d5df5a48ae574c9'
+userhash = 'a90e6e60079f5e07d02541384fa95a9aec31144ad3a5f4b46e22bc0c38623624'
+passwdhash = '09ff6bdc2e8bce7fc2abc5a909fcf059a0a99ec7f9717ddba869d003bdf38e51'
 
 def check_auth(username, password):
     """This function is called to check if a username /
@@ -47,7 +47,7 @@ def vis():
 
 @app.route('/ranking_data', methods=["GET", "POST"])
 def get_rankings():
-    df = pd.read_csv('test_scores.csv')
+    df = pd.read_csv('test_scores.csv').fillna('')
     zscored = [stats.mstats.zscore(df['judge_%d' % d]) for d in range(1, 8)]
     for d in range(1, 8):
         df['judge_%d_zscored' % d] = zscored[d - 1]
@@ -76,4 +76,5 @@ def get_rankings():
             "winners": category_winners.to_html()}
     
 if __name__ == "__main__":
-    app.run(ssl_context='adhoc')
+    #app.run(ssl_context='adhoc')
+    app.run(ssl_context=('cert.pem', 'key.pem'))
