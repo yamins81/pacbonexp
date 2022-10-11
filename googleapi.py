@@ -10,7 +10,6 @@ from googleapiclient.http import  (MediaIoBaseDownload,
 
 GTOKEN_FILE = os.environ['PACBONEXP_GTOKENFILE']
 
-from utils import listsum
 
 def get_service(service_name, version):
     with open(GTOKEN_FILE, 'rb') as token:
@@ -38,7 +37,7 @@ def get_file_items(service=None, pagesize=500):
         npg = None
         pg = 1
         while True:
-            logger.info('Getting page %d of gdrive filelist' % pg)
+            print('Getting page %d of gdrive filelist' % pg)
             if npg:
                 results = service.files().list(pageSize=pagesize,
                                                pageToken=npg,
@@ -75,8 +74,8 @@ def download_csv_file(path, file_id=None, name=None, service=None, mimeType='tex
         file_id = get_file_id_from_name(name, service=service)
 
     if file_id is None:
-        logger.debug("file %s not found" % name)
-        
+        print("file %s not found" % name)
+       
     request = service.files().export(fileId=file_id,
                                      mimeType=mimeType)
     with open(path, 'wb') as fh:
@@ -84,7 +83,7 @@ def download_csv_file(path, file_id=None, name=None, service=None, mimeType='tex
         done = False
         while done is False:
             status, done = downloader.next_chunk()
-        logger.info("Download %s %d%%." % (path, int(status.progress() * 100)))
+        print("Download %s %d%%." % (path, int(status.progress() * 100)))
 
 
 def get_csv_file(filename):

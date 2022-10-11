@@ -1,3 +1,4 @@
+import os
 import hashlib
 from functools import wraps
 import pandas as pd
@@ -9,6 +10,9 @@ from flask import (Flask,
 from flask import request, Response
 app = Flask(__name__)
 
+from settings import *
+
+import googleapi
 
 userhash = 'a90e6e60079f5e07d02541384fa95a9aec31144ad3a5f4b46e22bc0c38623624'
 passwdhash = '09ff6bdc2e8bce7fc2abc5a909fcf059a0a99ec7f9717ddba869d003bdf38e51'
@@ -48,6 +52,30 @@ def vis():
 @app.route('/ranking_data', methods=["GET", "POST"])
 def get_rankings():
     df = pd.read_csv('test_scores.csv').fillna('')
+    rankings = get_rankings_from_data(df)
+    rankings['rankings'] = rankings['rankings'].to_html()
+    rankings['winners'] = rankings['winners'].to_html()
+    return rankings
+
+
+@app.route('/create_test_rankings', methods=["GET", "POST"])
+def get_test_rankings_from_gdrive():
+    test_score_path = os.path.join(CODE_DIR, 'pacbonexp_test_scores.csv')
+    googleapi.download_csv_file(test_score_path,
+                                name='pacbonexp_test_scores')
+    df = pd.read_csv(test_score_path).fillna('')
+    outcomes = get_rankings_from_data(df)
+    rankings = outcomes['rankings']
+    winners = outcomes['winners']
+    rankings_path = os.path.join(CODE_DIR, 'test_rankings.csv')
+    winners_path = os.path.join(CODE_DIR, 'test_winners.csv')
+    rankings.to_csv(rankings_path, index=False, encoding='utf-8')
+    winners.to_csv(winners_path, index=False, encoding='utf-8')
+    googleapi.upload_csv_file(rankings_path, 'test_rankings')
+    googleapi.upload_csv_file(winners_path, 'test_winners')
+    return 'success'
+    
+def get_rankings_from_data(df):
     zscored = [stats.mstats.zscore(df['judge_%d' % d]) for d in range(1, 8)]
     for d in range(1, 8):
         df['judge_%d_zscored' % d] = zscored[d - 1]
@@ -72,8 +100,8 @@ def get_rankings():
 
     category_winners = df[df['category_rank'] == 1]
 
-    return {"rankings": df.to_html(),
-            "winners": category_winners.to_html()}
+    return {"rankings": df,
+            "winners": category_winners}
     
 if __name__ == "__main__":
     #app.run(ssl_context='adhoc')
