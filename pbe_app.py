@@ -69,11 +69,39 @@ def get_test_rankings_from_gdrive():
     winners = outcomes['winners']
     rankings_path = os.path.join(CODE_DIR, 'test_rankings.csv')
     winners_path = os.path.join(CODE_DIR, 'test_winners.csv')
-    rankings.to_csv(rankings_path, index=False, encoding='utf-8')
-    winners.to_csv(winners_path, index=False, encoding='utf-8')
-    googleapi.upload_csv_file(rankings_path, 'test_rankings')
-    googleapi.upload_csv_file(winners_path, 'test_winners')
+
+    rankname = 'pacbonexp_test_rankings'
+    winnername = 'pacbonexp_test_winners'
+
+    rid = googleapi.get_file_id_from_name(rankname)
+    wid = googleapi.get_file_id_from_name(winnername)
+    if rid is None or wid is None:
+        print("Target files don't exist, making")
+        rankings.to_csv(rankings_path, index=False, encoding='utf-8')
+        winners.to_csv(winners_path, index=False, encoding='utf-8')
+        googleapi.upload_csv_file(rankings_path, rankname)
+        googleapi.upload_csv_file(winners_path, winnername)
+
+    else:
+        print("Target files already exist, updating")
+        ranking_recs = [list(n) for i, n in rankings.iterrows()]
+        winners_recs = [list(n) for i, n in winners.iterrows()]
+
+        googleapi.spreadsheet_action('update',
+                                     ranking_recs,
+                                     name=rankname,
+                                     range='A2')
+
+        googleapi.spreadsheet_action('update',
+                                     winners_recs,
+                                     name=winnername,
+                                     range='A2')
+
+        googleapi.download_csv_file(rankings_path, name=rankname)
+        googleapi.download_csv_file(winners_path, name=winnername)
+    
     return 'success'
+
     
 def get_rankings_from_data(df):
     zscored = [stats.mstats.zscore(df['judge_%d' % d]) for d in range(1, 8)]
