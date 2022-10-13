@@ -84,18 +84,18 @@ def get_test_rankings_from_gdrive():
 
     else:
         print("Target files already exist, updating")
-        ranking_recs = [list(n) for i, n in rankings.iterrows()]
-        winners_recs = [list(n) for i, n in winners.iterrows()]
+        ranking_recs = [list(rankings.columns)] + [list(n) for i, n in rankings.iterrows()]
+        winners_recs = [list(winners.columns)] + [list(n) for i, n in winners.iterrows()]
 
         googleapi.spreadsheet_action('update',
                                      ranking_recs,
                                      name=rankname,
-                                     range='A2')
+                                     range='A1')
 
         googleapi.spreadsheet_action('update',
                                      winners_recs,
                                      name=winnername,
-                                     range='A2')
+                                     range='A1')
 
         googleapi.download_csv_file(rankings_path, name=rankname)
         googleapi.download_csv_file(winners_path, name=winnername)
