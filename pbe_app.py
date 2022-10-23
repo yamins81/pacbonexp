@@ -58,6 +58,76 @@ def get_rankings():
     return rankings
 
 
+
+@app.route('/create_test_bestinshow', methods=["GET", "POST"])
+def get_test_bestinshow_from_gdrive():
+    test_bis_path = os.path.join(CODE_DIR, 'pacbonexp_test_bestinshow.csv')
+    googleapi.download_csv_file(test_bis_path,
+                                name='pacbonexp_test_bestinshow')
+    df = pd.read_csv(test_bis_path).fillna('')
+    outcomes = get_bestinshow_from_data(df)
+    bis_ranking = outcomes['ranking']
+
+    bis_rankname = 'pacbonexp_test_bestinshow_ranks'
+    bis_ranking_path = os.path.join(CODE_DIR, bis_rankname + '.csv')
+
+    rid = googleapi.get_file_id_from_name(bis_rankname)
+    if rid is None:
+        print("Target file doesn't exist, making")
+        bis_ranking.to_csv(bis_ranking_path, index=False, encoding='utf-8')
+        googleapi.upload_csv_file(bis_ranking_path, bis_rankname)
+
+    else:
+        print("Target file already exists, updating")
+        bis_ranking_recs = [list(bis_ranking.columns)] + [list(n) for i, n in bis_ranking.iterrows()]
+
+        googleapi.spreadsheet_action('update',
+                                     bis_ranking_recs,
+                                     name=bis_rankname,
+                                     range='A1')
+        googleapi.download_csv_file(bis_ranking_path, name=bis_rankname)
+
+    
+    return 'success'
+
+
+def level_to_points(level):
+    if level == 1:
+        return 5
+    elif level == 2:
+        return 3
+    elif level == 3:
+        return 1
+
+
+def get_bestinshow_from_data(df):
+    votes = {}
+    for i, rec in df.iterrows():
+        for j in range(1, 4):
+            choice = rec['%d_choice' % j]
+            if choice not in votes:
+                votes[choice] = {}
+            if j not in votes[choice]:
+                votes[choice][j] = 0
+            votes[choice][j] += 1
+
+    new_recs = []
+    for choice in votes:
+        vrec = votes[choice]
+        pts = sum([vrec[j] * level_to_points(j) for j in  vrec])
+        new_rec = {}
+        new_rec['display']= choice
+        for j in vrec:
+            new_rec['%d_votes' % j] = vrec[j]
+        new_rec['points'] = pts
+        new_recs.append(new_rec)
+        
+    new_df = pd.DataFrame(new_recs).fillna(0)
+    new_df = new_df.sort_values(by='points', ascending=False)
+
+    return {'ranking': new_df}
+    
+
 @app.route('/create_test_rankings', methods=["GET", "POST"])
 def get_test_rankings_from_gdrive():
     test_score_path = os.path.join(CODE_DIR, 'pacbonexp_test_scores.csv')
