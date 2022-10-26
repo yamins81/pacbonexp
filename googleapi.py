@@ -169,13 +169,17 @@ def spreadsheet_action(aname,
         assert name is not None, name
         file_id = get_file_id_from_name(name, service=file_service)
 
-    body = {body_type: data}
+    if body_type is not None:
+        body = {body_type: data}
+    else:
+        body = {}
 
     resource = sheet_service.spreadsheets()
 
     if get_values:
         resource = resource.values()
-        kwargs['valueInputOption'] = valueInputOption
+        if valueInputOption is not None:
+            kwargs['valueInputOption'] = valueInputOption
 
     func = getattr(resource, aname)
     

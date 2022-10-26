@@ -81,6 +81,12 @@ def get_test_bestinshow_from_gdrive():
         print("Target file already exists, updating")
         bis_ranking_recs = [list(bis_ranking.columns)] + [list(n) for i, n in bis_ranking.iterrows()]
 
+        googleapi.spreadsheet_action('clear',
+                                     None,
+                                     name=bis_rankname,
+                                     valueInputOption=None,
+                                     body_type=None,
+                                     range=bis_rankname)
         googleapi.spreadsheet_action('update',
                                      bis_ranking_recs,
                                      name=bis_rankname,
@@ -124,6 +130,10 @@ def get_bestinshow_from_data(df):
         
     new_df = pd.DataFrame(new_recs).fillna(0)
     new_df = new_df.sort_values(by='points', ascending=False)
+    vcols = [k for k in new_df.columns if 'votes' in k]
+    vcols.sort()
+    cols = ['display'] + vcols + ['points']
+    new_df = new_df[cols]
 
     return {'ranking': new_df}
     
@@ -133,10 +143,10 @@ def get_test_rankings_from_gdrive():
     test_score_path = os.path.join(CODE_DIR, 'pacbonexp_test_scores.csv')
     googleapi.download_csv_file(test_score_path,
                                 name='pacbonexp_test_scores')
-    df = pd.read_csv(test_score_path).fillna('')
+    df = pd.read_csv(test_score_path)
     outcomes = get_rankings_from_data(df)
-    rankings = outcomes['rankings']
-    winners = outcomes['winners']
+    rankings = outcomes['rankings'].fillna('')
+    winners = outcomes['winners'].fillna('')
     rankings_path = os.path.join(CODE_DIR, 'test_rankings.csv')
     winners_path = os.path.join(CODE_DIR, 'test_winners.csv')
 
@@ -157,11 +167,24 @@ def get_test_rankings_from_gdrive():
         ranking_recs = [list(rankings.columns)] + [list(n) for i, n in rankings.iterrows()]
         winners_recs = [list(winners.columns)] + [list(n) for i, n in winners.iterrows()]
 
+        googleapi.spreadsheet_action('clear',
+                                     None,
+                                     name=rankname,
+                                     valueInputOption=None,
+                                     body_type=None,
+                                     range=rankname)
+                                     
         googleapi.spreadsheet_action('update',
                                      ranking_recs,
                                      name=rankname,
                                      range='A1')
 
+        googleapi.spreadsheet_action('clear',
+                                     None,
+                                     name=winnername,
+                                     valueInputOption=None,
+                                     body_type=None,
+                                     range=winnername)
         googleapi.spreadsheet_action('update',
                                      winners_recs,
                                      name=winnername,
@@ -174,10 +197,11 @@ def get_test_rankings_from_gdrive():
 
     
 def get_rankings_from_data(df):
-    zscored = [stats.mstats.zscore(df['judge_%d' % d]) for d in range(1, 8)]
-    for d in range(1, 8):
-        df['judge_%d_zscored' % d] = zscored[d - 1]
-    avg_zscores = [np.mean([df[['judge_%d_zscored' % d]].iloc[i]  for d in range(1, 8)]) for i in range(len(df))]
+    judge_cols = [k for k in df.columns if 'judge_' in k]
+    zscored = {k: stats.mstats.zscore(df[k].fillna(0)) for k in judge_cols}
+    for k in judge_cols:
+        df['%s_zscored' % k] = zscored[k]
+    avg_zscores = [np.mean([df[['%s_zscored' % k]].iloc[i]  for k in judge_cols]) for i in range(len(df))]
 
     df['avg_zscore'] = avg_zscores
 
